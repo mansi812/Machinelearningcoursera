@@ -1,0 +1,115 @@
+---
+title: "Machine Learning Project"
+author: "Mansi Gupta"
+date: "20 August 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+##What you should submit
+
+The goal of your project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. You may use any of the other variables to predict with. You should create a report describing how you built your model, how you used cross validation, what you think the expected out of sample error is, and why you made the choices you did. You will also use your prediction model to predict 20 different test cases.
+
+Your submission should consist of a link to a Github repo with your R markdown and compiled HTML file describing your analysis. Please constrain the text of the writeup to < 2000 words and the number of figures to be less than 5. It will make it easier for the graders if you submit a repo with a gh-pages branch so the HTML page can be viewed online (and you always want to make it easy on graders :-). You should also apply your machine learning algorithm to the 20 test cases available in the test data above. Please submit your predictions in appropriate format to the programming assignment for automated grading. See the programming assignment for additional details.
+
+##Approach:
+The dataset contains a lot number of  rows and columns. The variable to be predicted is type 'class', hence we will use machine learning algorithms like decision trees and random Forest to predict the response of variable 'classe':It has 5 response types:(Class A) - throwing the elbows to the front (Class B) - lifting the dumbbell only halfway (Class C) - lowering the dumbbell only halfway (Class D) - throwing the hips to the front (Class E)
+Cross validation will be used to split the training dataset into two parts for training and testing purposes. Finally the best model will be applied on  final test data as is provided by the course instructors.
+Some exploratory analysis will be done to briefly understand the characterisitics of the data and then data clean up to get rid of extra variables which cannot contribute to prediction algorithm.
+##Expected Out of Sample error:
+Error will be defined as 1-accuracy.Accuracy is the number of correctly classified observations in the training data set.Expected Out of sample error will correspond to error offinal  test data set.
+
+##Data load 
+
+```{r data}
+trainUrl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+testUrl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+training <- read.csv(url(trainUrl), na.strings=c("NA","#DIV/0!",""))
+testing <- read.csv(url(testUrl), na.strings=c("NA","#DIV/0!",""))
+
+```
+
+##Exploration of data
+
+```{r expl}
+dim(training)
+dim(testing)
+summary(training)
+summary(testing)
+str(training)
+str(testing)
+head(training)
+head(testing)
+```
+
+##Data cleanup
+
+```{r clean}
+#Delete columns with all missing values
+training<-training[,colSums(is.na(training))==0]
+testing<-testing[,colSums(is.na(testing))==0]
+
+#The first 7 columns are irrelevant for prediction model. Can be removed.
+training<-training[,-c(1:7)]
+testing<-testing[,-c(1:7)]
+```
+
+##Cross validation:
+Partitioning the training data so that 75% of it is available for training and remaining 25% for testing.
+
+```{r cross}
+library(caret)
+data<-createDataPartition(y=training$classe,p=0.75,list=FALSE)
+newtrain<-training[data,]
+newtest<-training[-data,]
+```
+
+##Applying Prediction models:
+#Model1:Decision tree
+
+```{r tree}
+library(rpart)
+library(rpart.plot)
+model1<-rpart(classe~.,data=newtrain,method="class")
+prediction<-predict(model1,newtest,type="class")
+
+##plot the decision tree:
+rpart.plot(model1,main= "Classification tree")
+
+##Confusion matrix to check the accuracy
+confusionMatrix(prediction,newtest$classe)
+```
+###The model accuracy is 73%
+
+#Model2:Random Forest
+
+```{r random}
+library(randomForest)
+model2<-randomForest(classe~.,data=newtrain,method="class")
+prediction2<-predict(model2,newtest,type="class")
+
+## Confusion Matrix
+confusionMatrix(prediction2, newtest$classe)
+
+##Checking ther importance of variables
+importance(model2)
+```
+###Final Decision
+
+Random Forest performed better than Decision trees. Random Forest has an  accuracy of 99.5% as compared to 73.9% for decision trees.The expedcted out of sample error is 1-0.995=0.005=0.5%.
+
+##Final submission
+Applying the chosen algorithm on test daTA
+```{r final}
+predictfinal<-predict(model2,testing,type="class")
+predictfinal
+```
+
+                      
